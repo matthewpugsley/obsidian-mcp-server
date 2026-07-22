@@ -18,7 +18,18 @@ An [MCP](https://modelcontextprotocol.io/) server that gives Claude (or any MCP-
 
 ## Setup
 
-**1. Clone and install dependencies**
+### Recommended vault placement
+
+The server works with a vault located anywhere on disk — this is a recommendation, not a requirement — but two practices are worth adopting before you set `VAULT_ROOT`:
+
+**Put the vault in a cloud-synced folder** (OneDrive, Google Drive, Dropbox, etc.). A vault is high-churn and low-ceremony — you edit notes constantly and don't want to commit every change just to preserve history. A sync service gives you deletion/disk-failure insurance passively, without imposing git ceremony. Keep the roles separate: sync handles disaster recovery; git handles deliberate versioning of your portable assets (which live in their own repos, not in the vault).
+
+**Prefer a top-level folder over a deeply-nested one** — e.g. a *sibling* to Documents rather than a *child* of it. Two reasons:
+
+- **Path length.** Vaults grow deep directory trees (`Reference/Languages/Japanese/…`). On Windows especially, nesting the vault root inside another synced folder eats into the path-length budget and can cause hard-to-diagnose failures on the deepest files.
+- **Per-folder sync configuration.** As a top-level folder, the vault can carry its own sync setting — on OneDrive, **"Always keep on this device"** (other providers have equivalents). Pinning the vault local guarantees every file is a real on-disk file rather than a cloud-only placeholder, which a tool reaching a not-yet-downloaded file can otherwise fail on. This setting usually can't be applied selectively to a shared parent like Documents, so keeping the vault as its own top-level folder is what makes the pin available.
+
+### 1. Clone and install dependencies
 
 ```
 git clone https://github.com/matthewpugsley/obsidian-mcp-server.git
@@ -26,7 +37,7 @@ cd obsidian-mcp-server
 uv sync
 ```
 
-**2. Create your `.env` file**
+### 2. Create your `.env` file
 
 ```
 copy .env.example .env
@@ -35,12 +46,14 @@ copy .env.example .env
 Edit `.env` and fill in your paths:
 
 ```
-VAULT_ROOT=C:\ObsidianVaults\Main
+VAULT_ROOT=C:\Users\you\OneDrive\ObsidianVault
 MCP_SOURCE=C:\path\to\obsidian-mcp-server
 MCP_DEST=C:\path\to\deploy\location
 ```
 
-**3. Deploy**
+The example `VAULT_ROOT` above models the recommended placement: a top-level folder inside a cloud-synced user folder (here, a sibling to `OneDrive\Documents`). Adjust to your own provider and path.
+
+### 3. Deploy
 
 ```
 .\deploy.ps1
@@ -48,7 +61,7 @@ MCP_DEST=C:\path\to\deploy\location
 
 This copies the server files to `MCP_DEST` and runs `uv sync` there.
 
-**4. Configure Claude Desktop**
+### 4. Configure Claude Desktop
 
 Add the server to your `claude_desktop_config.json`:
 
@@ -65,7 +78,7 @@ Add the server to your `claude_desktop_config.json`:
         "C:\\path\\to\\deploy\\location\\server.py"
       ],
       "env": {
-        "VAULT_ROOT": "C:\\ObsidianVaults\\Main"
+        "VAULT_ROOT": "C:\\Users\\you\\OneDrive\\ObsidianVault"
       }
     }
   }
@@ -89,7 +102,7 @@ Restart Claude Desktop after saving.
 
 ## Vault Conventions
 
-This server works with any Obsidian vault. For best results with `read_active_context`, add YAML frontmatter to your notes:
+This server works with any Obsidian vault. See [Recommended vault placement](#recommended-vault-placement) above for where on disk to put it. For best results with `read_active_context`, add YAML frontmatter to your notes:
 
 ```yaml
 ---
